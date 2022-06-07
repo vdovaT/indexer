@@ -6,6 +6,7 @@ import { config } from "@/config/index";
 import { idb, redb } from "@/common/db";
 import { randomUUID } from "crypto";
 import AWS from "aws-sdk";
+import { OrdersDataSource } from "@/jobs/data-export/data-sources/orders";
 
 import { AskEventsDataSource } from "@/jobs/data-export/data-sources/ask-events";
 import { TokenFloorAskEventsDataSource } from "@/jobs/data-export/data-sources/token-floor-ask-events";
@@ -39,6 +40,8 @@ if (config.doBackgroundWork) {
       const { kind } = job.data;
 
       logger.info(QUEUE_NAME, `Export started. kind:${kind}`);
+
+      logger.info(QUEUE_NAME, `Export started. kind:${kind}, backfill:${backfill}`);
 
       try {
         const { cursor, sequenceNumber } = await getSequenceInfo(kind);

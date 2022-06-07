@@ -3,6 +3,8 @@ import { redb } from "@/common/db";
 
 import * as exportData from "@/jobs/data-export/export-data";
 
+import * as exportData from "@/jobs/data-export/export-data";
+
 import "@/jobs/data-export/export-data";
 import cron from "node-cron";
 import { redlock } from "@/common/redis";
