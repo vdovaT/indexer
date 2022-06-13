@@ -1662,7 +1662,6 @@ export const syncEvents = async (
 
             case "seaport-order-filled": {
               const parsedLog = eventData.abi.parseLog(log);
-              logger.info("debug1", "HERE0 " + JSON.stringify(parsedLog));
               const orderId = parsedLog.args["orderHash"].toLowerCase();
               const maker = parsedLog.args["offerer"].toLowerCase();
               let taker = parsedLog.args["recipient"].toLowerCase();
@@ -1673,7 +1672,6 @@ export const syncEvents = async (
                 offer,
                 consideration
               );
-              logger.info("debug1", "HERE1 " + JSON.stringify(saleInfo));
               if (saleInfo) {
                 let side: "sell" | "buy";
                 if (saleInfo.paymentToken === Sdk.Common.Addresses.Eth[config.chainId]) {
