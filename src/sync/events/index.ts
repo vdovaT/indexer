@@ -1668,10 +1668,13 @@ export const syncEvents = async (
               const offer = parsedLog.args["offer"];
               const consideration = parsedLog.args["consideration"];
 
+              logger.info("debug", JSON.stringify(parsedLog));
+
               const saleInfo = new Sdk.Seaport.Exchange(config.chainId).deriveBasicSale(
                 offer,
                 consideration
               );
+              logger.info("debug", JSON.stringify(saleInfo));
               if (saleInfo) {
                 let side: "sell" | "buy";
                 if (saleInfo.paymentToken === Sdk.Common.Addresses.Eth[config.chainId]) {
