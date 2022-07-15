@@ -35,6 +35,12 @@ const main = async () => {
 
   id = await getNextId("user_activities");
   await updateSequence("user_activities_id_seq", id);
+
+  id = await getNextId("data_export_tasks");
+  await updateSequence("data_export_tasks_id_seq", id);
+
+  id = await getNextId("bundles");
+  await updateSequence("bundles_id_seq", id);
 };
 
 async function getNextId(table: string) {
