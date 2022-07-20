@@ -1661,16 +1661,12 @@ export const syncEvents = async (
       }
 
       if (!backfill) {
-        logger.info("sync-events", `Assigning orders source to fill events`);
-
         // Assign source based on order for each fill.
         await Promise.all([
           assignOrderSourceToFillEvents(fillEvents),
           assignOrderSourceToFillEvents(fillEventsPartial),
           assignOrderSourceToFillEvents(fillEventsFoundation),
         ]);
-      } else {
-        logger.warn("sync-events", `Skipping assigning orders source assigned to fill events`);
       }
 
       // WARNING! Ordering matters (fills should come in front of cancels).
@@ -1851,14 +1847,7 @@ const assignOrderSourceToFillEvents = async (fillEvents: es.fills.Event[]) => {
         }
 
         fillEvents.forEach((event, index) => {
-          if (event.orderId == undefined) {
-            logger.warn(
-              "sync-events",
-              `Order Id is missing on fill event: ${JSON.stringify(event)}`
-            );
-
-            return;
-          }
+          if (event.orderId == undefined) return;
 
           const orderSourceId = orderSourceIdByOrderId.get(event.orderId!);
 
@@ -1872,11 +1861,6 @@ const assignOrderSourceToFillEvents = async (fillEvents: es.fills.Event[]) => {
             );
 
             fillEvents[index].orderSourceIdInt = orderSourceId;
-          } else {
-            logger.warn(
-              "sync-events",
-              `Orders source NOT assigned to fill event: ${JSON.stringify(event)}`
-            );
           }
         });
       }
