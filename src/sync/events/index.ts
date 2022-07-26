@@ -1656,6 +1656,57 @@ export const syncEvents = async (
 
               break;
             }
+
+            case "rarible-match": {
+              const { args } = eventData.abi.parseLog(log);
+              const leftHash = args["leftHash"].toLowerCase();
+              const rightHash = args["rightHash"].toLowerCase();
+              const leftMaker = args["leftMaker"].toLowerCase();
+              const rightMaker = args["rightMaker"].toLowerCase();
+              const newLeftFill = args["newLeftFill"].toString();
+              const newRightFill = args["newRightFill"].toString();
+              const leftAsset = args["leftAsset"];
+              const rightAsset = args["rightAsset"];
+
+              // Keccak-256 hash
+              // ERC721 = 73ad2146
+              // ERC1155 = 973bb640
+              const side =
+                leftAsset.assetClass === "0x73ad2146" || leftAsset.assetClass === "0x973bb640"
+                  ? "sell"
+                  : "buy";
+
+              const price =
+                side === "buy"
+                  ? bn(newLeftFill).div(newRightFill).toString()
+                  : bn(newRightFill).div(newLeftFill).toString();
+
+              const decodedAsset = defaultAbiCoder.decode(
+                ["(address token, uint tokenId)"],
+                side === "sell" ? leftAsset.data : rightAsset.data
+              );
+
+              const contract = decodedAsset.token;
+              const tokenId = decodedAsset.tokenId;
+
+              const amount = side === "sell" ? newLeftFill : newRightFill;
+
+              fillEventsPartial.push({
+                orderKind: "rarible",
+                orderId: leftHash,
+                orderSide: side,
+                orderSourceIdInt: null,
+                maker: leftMaker,
+                taker: rightMaker,
+                price,
+                contract,
+                tokenId,
+                amount,
+                baseEventParams,
+              });
+
+              break;
+            }
           }
         } catch (error) {
           logger.info("sync-events", `Failed to handle events: ${error}`);
