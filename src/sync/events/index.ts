@@ -1685,8 +1685,8 @@ export const syncEvents = async (
                 side === "sell" ? leftAsset.data : rightAsset.data
               );
 
-              const contract = decodedAsset.token;
-              const tokenId = decodedAsset.tokenId;
+              const contract = decodedAsset[0][0].toLowerCase();
+              const tokenId = decodedAsset[0][1].toString();
 
               const amount = side === "sell" ? newLeftFill : newRightFill;
 
