@@ -36,12 +36,7 @@ if (config.doBackgroundWork) {
 
         await syncEvents(fromBlock, toBlock, { backfill, eventDataKinds });
       } catch (error) {
-        logger.error(
-          QUEUE_NAME,
-          // @ts-ignore
-          `Events backfill syncing failed: ${error} ${JSON.stringify(error.stack, null, 2)}`
-        );
-
+        logger.error(QUEUE_NAME, `Events backfill syncing failed: ${error}`);
         throw error;
       }
     },

@@ -1660,7 +1660,6 @@ export const syncEvents = async (
             case "rarible-match": {
               const { args } = eventData.abi.parseLog(log);
               const leftHash = args["leftHash"].toLowerCase();
-              const rightHash = args["rightHash"].toLowerCase();
               const leftMaker = args["leftMaker"].toLowerCase();
               const rightMaker = args["rightMaker"].toLowerCase();
               const newLeftFill = args["newLeftFill"].toString();
