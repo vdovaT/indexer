@@ -1668,15 +1668,31 @@ export const syncEvents = async (
               const rightAsset = args["rightAsset"];
 
               // Keccak-256 hash
+              // ERC20 = 8ae85d84
+              // ETH = aaaebeba
               // ERC721 = 73ad2146
               // ERC1155 = 973bb640
-              const side =
-                leftAsset.assetClass === "0x73ad2146" || leftAsset.assetClass === "0x973bb640"
-                  ? "sell"
-                  : "buy";
+              const assetTypes = ["0x73ad2146", "0x973bb640", "0x8ae85d84", "0xaaaebeba"];
+
+              if (
+                (["0x8ae85d84"].includes(leftAsset[0]) &&
+                  ![Sdk.Common.Addresses.Weth[config.chainId]].includes(leftAsset[1])) ||
+                (["0x8ae85d84"].includes(rightAsset[0]) &&
+                  ![Sdk.Common.Addresses.Weth[config.chainId]].includes(rightAsset[1]))
+              ) {
+                // Skip if the payment token is not supported.
+                break;
+              }
+
+              // Exclude orders with exotic asset types
+              if (!assetTypes.includes(leftAsset[0]) || !assetTypes.includes(rightAsset[0])) {
+                break;
+              }
+
+              const side = ["0x73ad2146", "0x973bb640"].includes(leftAsset[0]) ? "sell" : "buy";
 
               const price =
-                side === "buy"
+                side === "sell"
                   ? bn(newLeftFill).div(newRightFill).toString()
                   : bn(newRightFill).div(newLeftFill).toString();
 
@@ -1688,7 +1704,7 @@ export const syncEvents = async (
               const contract = decodedAsset[0][0].toLowerCase();
               const tokenId = decodedAsset[0][1].toString();
 
-              const amount = side === "sell" ? newLeftFill : newRightFill;
+              const amount = side === "buy" ? newLeftFill : newRightFill;
 
               fillEventsPartial.push({
                 orderKind: "rarible",
