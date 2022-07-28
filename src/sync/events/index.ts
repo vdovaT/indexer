@@ -1761,11 +1761,12 @@ export const syncEvents = async (
               const rightAsset = args["rightAsset"];
 
               // Keccak-256 hash
-              // ERC20 = 8ae85d84
-              // ETH = aaaebeba
-              // ERC721 = 73ad2146
-              // ERC1155 = 973bb640
-              const assetTypes = ["0x73ad2146", "0x973bb640", "0x8ae85d84", "0xaaaebeba"];
+              const ERC20 = "0x8ae85d84";
+              const ETH = "0xaaaebeba";
+              const ERC721 = "0x73ad2146";
+              const ERC1155 = "0x973bb640";
+
+              const assetTypes = [ERC721, ERC1155, ERC20, ETH];
 
               if (
                 (["0x8ae85d84"].includes(leftAsset[0]) &&
@@ -1782,7 +1783,8 @@ export const syncEvents = async (
                 break;
               }
 
-              const side = ["0x73ad2146", "0x973bb640"].includes(leftAsset[0]) ? "sell" : "buy";
+              // Assume the left order is the maker's order
+              const side = [ERC721, ERC1155].includes(leftAsset[0]) ? "sell" : "buy";
 
               const price =
                 side === "sell"
