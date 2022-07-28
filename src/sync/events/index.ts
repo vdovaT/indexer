@@ -1769,9 +1769,9 @@ export const syncEvents = async (
               const assetTypes = [ERC721, ERC1155, ERC20, ETH];
 
               if (
-                (["0x8ae85d84"].includes(leftAsset[0]) &&
+                ([ERC20].includes(leftAsset[0]) &&
                   ![Sdk.Common.Addresses.Weth[config.chainId]].includes(leftAsset[1])) ||
-                (["0x8ae85d84"].includes(rightAsset[0]) &&
+                ([ERC20].includes(rightAsset[0]) &&
                   ![Sdk.Common.Addresses.Weth[config.chainId]].includes(rightAsset[1]))
               ) {
                 // Skip if the payment token is not supported.
@@ -1787,7 +1787,7 @@ export const syncEvents = async (
               const side = [ERC721, ERC1155].includes(leftAsset[0]) ? "sell" : "buy";
 
               const price =
-                side === "sell"
+                side === "buy"
                   ? bn(newLeftFill).div(newRightFill).toString()
                   : bn(newRightFill).div(newLeftFill).toString();
 
@@ -1799,7 +1799,7 @@ export const syncEvents = async (
               const contract = decodedAsset[0][0].toLowerCase();
               const tokenId = decodedAsset[0][1].toString();
 
-              const amount = side === "buy" ? newLeftFill : newRightFill;
+              const amount = side === "sell" ? newLeftFill : newRightFill;
 
               fillEventsPartial.push({
                 orderKind: "rarible",
