@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { splitSignature } from "@ethersproject/bytes";
 import * as Boom from "@hapi/boom";
 import { Request, RouteOptions } from "@hapi/hapi";
 import Joi from "joi";
@@ -15,13 +16,18 @@ const version = "v2";
 
 export const postOrderV2Options: RouteOptions = {
   description: "Submit single order",
-  tags: ["api", "Orderbook"],
+  tags: ["api", "x-deprecated"],
   plugins: {
     "hapi-swagger": {
       order: 5,
     },
   },
   validate: {
+    query: Joi.object({
+      signature: Joi.string()
+        .lowercase()
+        .pattern(/^0x[a-fA-F0-9]+$/),
+    }),
     payload: Joi.object({
       order: Joi.object({
         kind: Joi.string()
@@ -35,7 +41,7 @@ export const postOrderV2Options: RouteOptions = {
         .valid("reservoir", "opensea", "looks-rare")
         .default("reservoir"),
       orderbookApiKey: Joi.string(),
-      source: Joi.string(),
+      source: Joi.string().description("The name of the source"),
       attribute: Joi.object({
         collection: Joi.string().required(),
         key: Joi.string().required(),
@@ -50,6 +56,7 @@ export const postOrderV2Options: RouteOptions = {
       throw Boom.badRequest("Order posting is disabled");
     }
 
+    const query = request.query as any;
     const payload = request.payload as any;
 
     try {
@@ -63,6 +70,23 @@ export const postOrderV2Options: RouteOptions = {
       const collection = payload.collection;
       // Only relevant for non-flagged tokens bids
       const isNonFlagged = payload.isNonFlagged;
+
+      const signature = query.signature ?? order.data.signature;
+      if (signature) {
+        const { v, r, s } = splitSignature(signature);
+
+        // If the signature is provided via query parameters, use it
+        order.data = {
+          ...order.data,
+          // To cover everything:
+          // - orders requiring a single signature field
+          // - orders requiring split signature fields
+          signature,
+          v,
+          r,
+          s,
+        };
+      }
 
       let schema: any;
       if (attribute) {

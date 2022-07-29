@@ -10,7 +10,7 @@ import Joi from "joi";
 import { redb } from "@/common/db";
 import { logger } from "@/common/logger";
 import { slowProvider } from "@/common/provider";
-import { bn, formatEth, fromBuffer, toBuffer } from "@/common/utils";
+import { bn, formatEth, fromBuffer, regex, toBuffer } from "@/common/utils";
 import { config } from "@/config/index";
 import { Sources } from "@/models/sources";
 
@@ -26,28 +26,17 @@ export const getExecuteBuyV1Options: RouteOptions = {
   },
   validate: {
     query: Joi.object({
-      token: Joi.string()
-        .lowercase()
-        .pattern(/^0x[a-fA-F0-9]{40}:[0-9]+$/),
+      token: Joi.string().lowercase().pattern(regex.token),
       quantity: Joi.number().integer().positive(),
-      tokens: Joi.array().items(
-        Joi.string()
-          .lowercase()
-          .pattern(/^0x[a-fA-F0-9]{40}:[0-9]+$/)
-      ),
-      taker: Joi.string()
-        .lowercase()
-        .pattern(/^0x[a-fA-F0-9]{40}$/)
-        .required(),
+      tokens: Joi.array().items(Joi.string().lowercase().pattern(regex.token)),
+      taker: Joi.string().lowercase().pattern(regex.address).required(),
       onlyQuote: Joi.boolean().default(false),
-      referrer: Joi.string()
-        .lowercase()
-        .pattern(/^0x[a-fA-F0-9]{40}$/)
-        .default(AddressZero),
+      source: Joi.string().lowercase(),
+      referrer: Joi.string().lowercase().pattern(regex.address).default(AddressZero),
       referrerFeeBps: Joi.number().integer().positive().min(0).max(10000).default(0),
       partial: Joi.boolean().default(false),
-      maxFeePerGas: Joi.string().pattern(/^[0-9]+$/),
-      maxPriorityFeePerGas: Joi.string().pattern(/^[0-9]+$/),
+      maxFeePerGas: Joi.string().pattern(regex.number),
+      maxPriorityFeePerGas: Joi.string().pattern(regex.number),
       skipBalanceCheck: Joi.boolean().default(false),
     })
       .or("token", "tokens")
@@ -70,10 +59,8 @@ export const getExecuteBuyV1Options: RouteOptions = {
       quote: Joi.number().unsafe(),
       path: Joi.array().items(
         Joi.object({
-          contract: Joi.string()
-            .lowercase()
-            .pattern(/^0x[a-fA-F0-9]{40}$/),
-          tokenId: Joi.string().lowercase().pattern(/^\d+$/),
+          contract: Joi.string().lowercase().pattern(regex.address),
+          tokenId: Joi.string().lowercase().pattern(regex.number),
           quantity: Joi.number().unsafe(),
           source: Joi.string().allow("", null),
           quote: Joi.number().unsafe(),
@@ -331,9 +318,14 @@ export const getExecuteBuyV1Options: RouteOptions = {
 
       const router = new Sdk.Router.Router(config.chainId, slowProvider);
       const tx = await router.fillListingsTx(listingDetails, query.taker, {
-        referrer: query.referrer,
-        referrerFeeBps: query.referrerFeeBps,
+        referrer: query.source,
+        fee: {
+          recipient: query.referrer,
+          bps: query.referrerFeeBps,
+        },
         partial: query.partial,
+        // Force router filling so that we don't lose any attribution
+        noDirectFilling: true,
       });
 
       // Check that the taker has enough funds to fill all requested tokens

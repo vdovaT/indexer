@@ -7,7 +7,7 @@ import Joi from "joi";
 
 import { redb } from "@/common/db";
 import { logger } from "@/common/logger";
-import { bn, toBuffer } from "@/common/utils";
+import { bn, regex, toBuffer } from "@/common/utils";
 import { config } from "@/config/index";
 
 const version = "v1";
@@ -15,7 +15,7 @@ const version = "v1";
 export const getExecuteCancelV1Options: RouteOptions = {
   description: "Cancel order",
   notes: "Cancel an existing order on any marketplace",
-  tags: ["api", "Orderbook"],
+  tags: ["api", "Router"],
   plugins: {
     "hapi-swagger": {
       order: 11,
@@ -30,16 +30,16 @@ export const getExecuteCancelV1Options: RouteOptions = {
         ),
       maker: Joi.string()
         .lowercase()
-        .pattern(/^0x[a-fA-F0-9]{40}$/)
+        .pattern(regex.address)
         .required()
         .description(
           "Address of wallet cancelling the order. Example: `0xF296178d553C8Ec21A2fBD2c5dDa8CA9ac905A00`"
         ),
       maxFeePerGas: Joi.string()
-        .pattern(/^[0-9]+$/)
+        .pattern(regex.number)
         .description("Optional. Set custom gas price"),
       maxPriorityFeePerGas: Joi.string()
-        .pattern(/^[0-9]+$/)
+        .pattern(regex.number)
         .description("Optional. Set custom gas price"),
     }),
   },
@@ -182,7 +182,7 @@ export const getExecuteCancelV1Options: RouteOptions = {
 
           // Generate exchange-specific cancellation transaction.
           const exchange = new Sdk.LooksRare.Exchange(config.chainId);
-          const cancelTx = exchange.cancelTransaction(query.maker, order);
+          const cancelTx = exchange.cancelOrderTx(query.maker, order);
 
           const steps = generateSteps(order.params.isOrderAsk ? "sell" : "buy");
           return {
@@ -218,7 +218,7 @@ export const getExecuteCancelV1Options: RouteOptions = {
 
           // Generate exchange-specific cancellation transaction.
           const exchange = new Sdk.OpenDao.Exchange(config.chainId);
-          const cancelTx = exchange.cancelTransaction(query.maker, order);
+          const cancelTx = exchange.cancelOrderTx(query.maker, order);
 
           const steps = generateSteps(
             order.params.direction === Sdk.OpenDao.Types.TradeDirection.SELL ? "sell" : "buy"
@@ -256,7 +256,7 @@ export const getExecuteCancelV1Options: RouteOptions = {
 
           // Generate exchange-specific cancellation transaction.
           const exchange = new Sdk.ZeroExV4.Exchange(config.chainId);
-          const cancelTx = exchange.cancelTransaction(query.maker, order);
+          const cancelTx = exchange.cancelOrderTx(query.maker, order);
 
           const steps = generateSteps(
             order.params.direction === Sdk.ZeroExV4.Types.TradeDirection.SELL ? "sell" : "buy"
@@ -281,6 +281,41 @@ export const getExecuteCancelV1Options: RouteOptions = {
                 status: "incomplete",
                 data: {
                   endpoint: `/orders/executed/v1?ids=${order.hash()}`,
+                  method: "GET",
+                },
+              },
+            ],
+          };
+        }
+
+        case "x2y2": {
+          const order = new Sdk.X2Y2.Order(config.chainId, orderResult.raw_data);
+
+          // Generate exchange-specific cancellation transaction
+          const exchange = new Sdk.X2Y2.Exchange(config.chainId, process.env.X2Y2_API_KEY!);
+          const cancelTx = exchange.cancelOrderTx(query.maker, order);
+
+          const steps = generateSteps(order.params.type as "sell" | "buy");
+          return {
+            steps: [
+              {
+                ...steps[0],
+                status: "incomplete",
+                data: {
+                  ...cancelTx,
+                  maxFeePerGas: query.maxFeePerGas
+                    ? bn(query.maxFeePerGas).toHexString()
+                    : undefined,
+                  maxPriorityFeePerGas: query.maxPriorityFeePerGas
+                    ? bn(query.maxPriorityFeePerGas).toHexString()
+                    : undefined,
+                },
+              },
+              {
+                ...steps[1],
+                status: "incomplete",
+                data: {
+                  endpoint: `/orders/executed/v1?ids=${order.params.itemHash}`,
                   method: "GET",
                 },
               },
