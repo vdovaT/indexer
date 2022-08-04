@@ -18,5 +18,4 @@ export type OrderKind =
   | "seaport"
   | "rarible"
   | "element-erc721"
-  | "element-erc1155"
-  | "quixotic";
+  | "element-erc1155";
